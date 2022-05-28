@@ -7,12 +7,18 @@ mainAudio = wrapper.querySelector("#main-audio");
 playPauseBtn = wrapper.querySelector(".play-pause");
 prevBtn = wrapper.querySelector("#prev");
 nextBtn = wrapper.querySelector("#next");
+progressArea = wrapper.querySelector(".progress-area");
 progressBar = wrapper.querySelector(".progress-bar");
+musicList = wrapper.querySelector(".music-list");
+showMoreBtn = wrapper.querySelector("#more-music");
+hideMusicBtn = musicList.querySelector("#close");
 
-let musicIndex = 2;
+// load random music on page refresh
+let musicIndex = Math.floor((Math.random() * allMusic.length) + 1);
 
 window.addEventListener("load", ()=>{
   loadMusic(musicIndex); // calling load music function once window loaded
+  playingNow();
 })
 // load music function
 function loadMusic(indexNumb) {
@@ -44,6 +50,7 @@ function nextMusic() {
   musicIndex > allMusic.length ? musicIndex = 1 : musicIndex = musicIndex;
   loadMusic(musicIndex);
   playMusic();
+  playingNow();
 }
 
 //prev music function
@@ -52,12 +59,14 @@ function prevMusic() {
   musicIndex < 1 ? musicIndex = allMusic.length : musicIndex = musicIndex;
   loadMusic(musicIndex);
   playMusic();
+  playingNow();
 }
 
 //play or music button event
 playPauseBtn.addEventListener("click", ()=>{
   const isMusicPaused = wrapper.classList.contains("paused");
-  isMusicPaused ? pauseMusic() : playMusic()
+  isMusicPaused ? pauseMusic() : playMusic();
+  playingNow();
 });
 
 // next music btn event
@@ -98,5 +107,133 @@ mainAudio.addEventListener("timeupdate", (e)=>{
     currentSec = `0${currentSec}`;
   }
   musicCurrentTime.innerText = `${currentMin}:${currentSec}`;
-
 });
+
+// update playing song current time according to the progress bar width
+progressArea.addEventListener("click", (e)=>{
+  let progressWidthval = progressArea.clientWidth;
+  let clickedOffSetX = e.offsetX;
+  let songDuration = mainAudio.duration;
+
+  mainAudio.currentTime = (clickedOffSetX / progressWidthval) * songDuration;
+  playMusic();
+});
+
+// repeat, shuffle song according to the icon
+const repeatBtn = wrapper.querySelector("#repeat-plist");
+repeatBtn.addEventListener("click", ()=>{
+  // get the innerText of the icon then change it accordingly
+  let getText = repeatBtn.innerText;
+  switch(getText){
+    case "repeat":  //if this icon is repeat then change it to repeat_one
+      repeatBtn.innerText = "repeat_one";
+      repeatBtn.setAttribute("title", "Song looped");
+      break;
+    case "repeat_one":  //if this icon is repeat_one then change it to shuffle
+      repeatBtn.innerText = "shuffle";
+      repeatBtn.setAttribute("title", "Playback shuffle");
+      break;
+    case "shuffle":  //if this icon is shuffle then change it to repeat
+      repeatBtn.innerText = "repeat";
+      repeatBtn.setAttribute("title", "Playlist looped");
+      break;
+  }
+});
+
+// what to do after the song ended
+mainAudio.addEventListener("ended", ()=>{
+  // do according to the icon, if user has set icon to loop song then we'll repeat the current song and will do the further accordingly
+  let getText = repeatBtn.innerText;
+  switch (getText) {
+    case "repeat":  //if this icon is repeat then simply call the nextMusic function
+      nextMusic();
+      break;
+    case "repeat_one":  //if this icon is repeat_one then change the current playing song current time to 0
+      mainAudio.currentTime =0;
+      loadMusic(musicIndex);
+      playMusic();
+      break;
+    case "shuffle":  //if this icon is shuffle then change it to repeat
+      // generating random index between the max range of array length
+      let randIndex = Math.floor((Math.random() * allMusic.length) + 1);
+      do{
+        randIndex = Math.floor((Math.random() * allMusic.length) + 1);
+      }while(musicIndex == randIndex); // this loop run until the next random number won't be the same of current music index
+      musicIndex = randIndex;
+      loadMusic(musicIndex);
+      playMusic();
+      playingNow();
+      break;
+  }
+});
+
+showMoreBtn.addEventListener("click", () => {
+  musicList.classList.toggle("show");
+});
+
+hideMusicBtn.addEventListener("click", () => {
+  showMoreBtn.click();
+});
+
+const ulTag = wrapper.querySelector("ul");
+
+// create li according to the array length
+for (let i = 0; i < allMusic.length; i++) {
+  // pass the song name, artist from the array to li
+  let liTag = `<li li-index="${i + 1}">
+                <div class="row">
+                  <span>${allMusic[i].name}</span>
+                  <p>${allMusic[i].artist}</p>
+                </div>
+                <audio class="${allMusic[i].src}" src="songs/${allMusic[i].src}.mp3"></audio>
+                <span id="${allMusic[i].src}" class="audio-duration">3:40</span>
+              </li>`;
+  ulTag.insertAdjacentHTML("beforeend", liTag);
+
+  let liAudioDuration = ulTag.querySelector(`#${allMusic[i].src}`);
+  let liAudioTag = ulTag.querySelector(`.${allMusic[i].src}`);
+
+  liAudioTag.addEventListener("loadeddata", ()=>{
+    let audioDuration = liAudioTag.duration;
+    let totalMin = Math.floor(audioDuration / 60);
+    let totalSec = Math.floor(audioDuration % 60);
+    if (totalSec < 10) { // adding 0 if sec is less than 10
+      totalSec = `0${totalSec}`;
+    }
+    liAudioDuration.innerText = `${totalMin}:${totalSec}`;
+    // adding t-duration attribute which will use below
+    liAudioDuration.setAttribute("t-duration", `${totalMin}:${totalSec}`);
+  });
+}
+
+//play particular song on click
+const allLiTags = ulTag.querySelectorAll("li");
+function playingNow() {
+  for (let j = 0; j < allLiTags.length; j++) {
+    let audioTag = allLiTags[j].querySelector(".audio-duration");
+    // remove playing class from all other li expect the last one which is clicked
+    if (allLiTags[j].classList.contains("playing")){
+      allLiTags[j].classList.remove("playing");
+      // get that audio duration value and pass to .audio-duration innertext
+      let addDuration = audioTag.getAttribute("t-duration");
+      audioTag.innerText = addDuration;
+    }
+    // if there is an li tag which li-index is equal to musicIndex, then this music is playing and will style it
+    // adding onclick attribute in all li tags
+    if (allLiTags[j].getAttribute("li-index") == musicIndex) {
+      allLiTags[j].classList.add("playing");
+      audioTag.innerText = "Playing";
+    }
+    allLiTags[j].setAttribute("onclick", "clicked(this)");
+  }
+}
+
+// play song on li click
+function clicked(element) {
+  // getting li index of particular clicked li tag
+  let getLiIndex = element.getAttribute("li-index");
+  musicIndex = getLiIndex; // passing that li-index to musicIndex
+  loadMusic(musicIndex);
+  playMusic();
+  playingNow();
+}
