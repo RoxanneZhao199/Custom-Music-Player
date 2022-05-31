@@ -23,6 +23,7 @@ body{
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  background: linear-gradient(180deg, var(--pink) 0%, var(--violet) 100%);
 }
 .wrapper{
   width: 380px;
@@ -134,8 +135,8 @@ body{
   margin-left: -13px;
 }
 .controls .play-pause{
-  height: 54px;
-  width: 54px;
+  height: 44px;
+  width: 44px;
   background: linear-gradient(var(--white) 0%, var(--darkwhite) 100%);
   box-shadow: 0px 0px 5px var(--pink);
   border-radius: 50%;
