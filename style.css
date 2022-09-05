@@ -23,7 +23,10 @@ body{
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(180deg, var(--pink) 0%, var(--violet) 100%);
+  /* background: linear-gradient(180deg, var(--pink) 0%, var(--violet) 100%); */
+  background-image: url(./images/img-5.jpg);
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 .wrapper{
   width: 380px;
